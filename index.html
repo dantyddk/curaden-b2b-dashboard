@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- Dashboard version: Embedded turnover metrics v5, 22 Oct 2026 -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -897,6 +898,24 @@
         line-height: 1.35;
         margin-top: 5px;
       }
+      .turnover-inline,
+      .spend-inline {
+        display: inline-block;
+        border-radius: 99px;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1;
+        padding: 5px 7px;
+        margin-right: 5px;
+      }
+      .turnover-inline {
+        color: var(--blue);
+        background: #edf3fb;
+      }
+      .spend-inline {
+        color: var(--pink);
+        background: #fceef4;
+      }
       .card,
       .panel {
         background: var(--card);
@@ -1412,19 +1431,29 @@
       function definitionsAccordion() {
         return `<details class="definitions-panel" open><summary>Metric definitions & calculation logic</summary><div class="definition-grid"><div class="definition-item"><b>Actual Paid incl. Tax</b><span>GMV incl. tax − Promotion Spend.</span></div><div class="definition-item"><b>Net Income incl. Tax</b><span>Actual Paid incl. Tax − Paygate Fee Spend.</span></div><div class="definition-item"><b>Cross Margin 1 incl. Tax</b><span>Net Income incl. Tax − Marketing Spend.</span></div><div class="definition-item"><b>GMV excl. tax</b><span>GMV incl. tax − Taxes.</span></div><div class="definition-item"><b>Average order value</b><span>GMV incl. tax ÷ Orders.</span></div><div class="definition-item"><b>Item Per Order</b><span>Quantity ÷ Orders.</span></div></div></details>`;
       }
+      function turnoverPct(value, gmv) {
+        return valid(value) && valid(gmv) && Number(gmv) !== 0
+          ? `${((Number(value) / Number(gmv)) * 100).toFixed(1)}% turnover`
+          : "Turnover share unavailable";
+      }
+      function spendPct(value, gmv) {
+        return valid(value) && valid(gmv) && Number(gmv) !== 0
+          ? `${((Number(value) / Number(gmv)) * 100).toFixed(1)}% of GMV`
+          : "Spend share unavailable";
+      }
       function metrics(s) {
         const primary = [
-            ["gmvInc", "GMV incl. tax", fmt.money(s.gmvInc), "Gross merchandise value incl. tax"],
-            ["actualPaid", "Actual Paid incl. Tax", fmt.money(s.actualPaid), "GMV incl. tax − Promotion Spend"],
-            ["netInc", "Net Income incl. Tax", fmt.money(s.netInc), "Actual Paid − Paygate Fee Spend"],
-            ["cm1", "Cross Margin 1 incl. Tax", fmt.money(s.cm1), "Net Income − Marketing Spend"],
+            ["gmvInc", "GMV incl. tax", fmt.money(s.gmvInc), '<span class="turnover-inline">100.0% turnover</span>Gross merchandise value incl. tax'],
+            ["actualPaid", "Actual Paid incl. Tax", fmt.money(s.actualPaid), `<span class="turnover-inline">${turnoverPct(s.actualPaid, s.gmvInc)}</span>GMV incl. tax − Promotion Spend`],
+            ["netInc", "Net Income incl. Tax", fmt.money(s.netInc), `<span class="turnover-inline">${turnoverPct(s.netInc, s.gmvInc)}</span>Actual Paid − Paygate Fee Spend`],
+            ["cm1", "Cross Margin 1 incl. Tax", fmt.money(s.cm1), `<span class="turnover-inline">${turnoverPct(s.cm1, s.gmvInc)}</span>Net Income − Marketing Spend`],
           ],
           secondary = [
             ["gmvExc", "GMV excl. tax", fmt.money(s.gmvExc)],
             ["tax", "Taxes", fmt.money(s.tax)],
-            ["promotionSpend", "Promotion Spend", fmt.money(s.promotionSpend)],
-            ["marketingSpend", "Marketing Spend", fmt.money(s.marketingSpend)],
-            ["paygateFeeSpend", "Paygate Fee Spend", fmt.money(s.paygateFeeSpend)],
+            ["promotionSpend", "Promotion Spend", fmt.money(s.promotionSpend), `<span class="spend-inline">${spendPct(s.promotionSpend, s.gmvInc)}</span>`],
+            ["marketingSpend", "Marketing Spend", fmt.money(s.marketingSpend), `<span class="spend-inline">${spendPct(s.marketingSpend, s.gmvInc)}</span>`],
+            ["paygateFeeSpend", "Paygate Fee Spend", fmt.money(s.paygateFeeSpend), `<span class="spend-inline">${spendPct(s.paygateFeeSpend, s.gmvInc)}</span>`],
             ["orders", "Orders", fmt.num(s.orders)],
             ["promoOrders", "Promo Orders", fmt.num(s.promoOrders)],
             ["qty", "Quantity", fmt.num(s.qty)],
