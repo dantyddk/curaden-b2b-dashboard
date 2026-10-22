@@ -829,10 +829,15 @@
         color: var(--ink);
         font: 500 18px/1.2 var(--font-heading);
       }
-      .primary-grid,
       .metrics {
         display: grid;
         grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .primary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 12px;
         margin-bottom: 16px;
       }
@@ -860,6 +865,12 @@
         border-top-color: var(--purple);
       }
       .metric.metric-netInc {
+        border-top-color: var(--pink);
+      }
+      .metric.metric-actualPaid {
+        border-top-color: var(--purple);
+      }
+      .metric.metric-cm1 {
         border-top-color: var(--lime);
       }
       .metric.metric-customers,
@@ -878,6 +889,12 @@
         color: var(--ink);
         font: 500 26px/1.2 var(--font-heading);
         font-variant-numeric: tabular-nums;
+        margin-top: 5px;
+      }
+      .metric .note {
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.35;
         margin-top: 5px;
       }
       .card,
@@ -1072,6 +1089,18 @@
       .primary-grid > .metric:nth-child(5n + 5) {
         border-top-color: var(--lime);
       }
+      .primary-grid > .metric:nth-child(1) {
+        border-top-color: var(--blue);
+      }
+      .primary-grid > .metric:nth-child(2) {
+        border-top-color: var(--purple);
+      }
+      .primary-grid > .metric:nth-child(3) {
+        border-top-color: var(--pink);
+      }
+      .primary-grid > .metric:nth-child(4) {
+        border-top-color: var(--lime);
+      }
     </style>
     <script>
       const APPS_SCRIPT_URL =
@@ -1148,19 +1177,19 @@
       };
       const abs = {
         gmvInc: "GMV incl. tax",
-        gmvExc: "GMV excl. tax",
-        actualPaid: "Actual paid",
+        actualPaid: "Actual Paid incl. Tax",
         netInc: "Net income incl. tax",
+        cm1: "Cross Margin 1 incl. tax",
+        gmvExc: "GMV excl. tax",
+        tax: "Taxes",
+        promotionSpend: "Promotion Spend",
+        marketingSpend: "Marketing Spend",
+        paygateFeeSpend: "Paygate Fee Spend",
         orders: "Orders",
-        customers: "Purchasing users",
-        qty: "Quantity",
-        shipping: "Shipping fee",
-        discount: "Discount amount",
-        tax: "Tax",
-        paygate: "Paygate fee",
         promoOrders: "Promo orders",
+        qty: "Quantity",
+        qtyPerOrder: "Item Per Order",
         aov: "Average order value",
-        qtyPerOrder: "Items per order",
       };
       const rates = {
         promoBurnRate: "% Promo burn",
@@ -1378,29 +1407,28 @@
         return `<div class="chart ${small ? "small" : ""}"><canvas id="${id}"></canvas></div>`;
       }
       function metricCards(items, klass = "metrics") {
-        return `<div class="${klass}">${items.map((x) => `<div class="metric metric-${x[0]}"><div class="l">${x[1]}</div><div class="v">${x[2]}</div></div>`).join("")}</div>`;
+        return `<div class="${klass}">${items.map((x) => `<div class="metric metric-${x[0]}"><div class="l">${x[1]}</div><div class="v">${x[2]}</div>${x[3] ? `<div class="note">${x[3]}</div>` : ""}</div>`).join("")}</div>`;
       }
       function definitionsAccordion() {
-        return `<details class="definitions-panel" open><summary>Metric definitions & calculation logic</summary><div class="definition-grid"><div class="definition-item"><b>GMV excl. tax</b><span>GMV incl. tax − taxes.</span></div><div class="definition-item"><b>Net income incl. tax</b><span>Actual customer paid − payment-gateway fee incl. tax. This is not net profit or contribution margin.</span></div><div class="definition-item"><b>% Promo burn</b><span>Total discount ÷ GMV excl. tax.</span></div><div class="definition-item"><b>% Paygate fee</b><span>Payment-gateway fee incl. tax ÷ (GMV incl. tax − discount).</span></div><div class="definition-item"><b>Purchasing users</b><span>Distinct normalized customer emails in the selected period.</span></div><div class="definition-item"><b>Average order value</b><span>Total GMV incl. tax ÷ eligible orders.</span></div></div></details>`;
+        return `<details class="definitions-panel" open><summary>Metric definitions & calculation logic</summary><div class="definition-grid"><div class="definition-item"><b>Actual Paid incl. Tax</b><span>GMV incl. tax − Promotion Spend.</span></div><div class="definition-item"><b>Net Income incl. Tax</b><span>Actual Paid incl. Tax − Paygate Fee Spend.</span></div><div class="definition-item"><b>Cross Margin 1 incl. Tax</b><span>Net Income incl. Tax − Marketing Spend.</span></div><div class="definition-item"><b>GMV excl. tax</b><span>GMV incl. tax − Taxes.</span></div><div class="definition-item"><b>Average order value</b><span>GMV incl. tax ÷ Orders.</span></div><div class="definition-item"><b>Item Per Order</b><span>Quantity ÷ Orders.</span></div></div></details>`;
       }
       function metrics(s) {
         const primary = [
-            ["gmvExc", "GMV excl. tax", fmt.money(s.gmvExc)],
-            ["orders", "Orders", fmt.num(s.orders)],
-            ["promoBurnRate", "% Promo burn", fmt.pct(s.promoBurnRate)],
-            ["paygateRate", "% Paygate fee", fmt.pct(s.paygateRate)],
-            ["netInc", "Net income incl. tax", fmt.money(s.netInc)],
+            ["gmvInc", "GMV incl. tax", fmt.money(s.gmvInc), "Gross merchandise value incl. tax"],
+            ["actualPaid", "Actual Paid incl. Tax", fmt.money(s.actualPaid), "GMV incl. tax − Promotion Spend"],
+            ["netInc", "Net Income incl. Tax", fmt.money(s.netInc), "Actual Paid − Paygate Fee Spend"],
+            ["cm1", "Cross Margin 1 incl. Tax", fmt.money(s.cm1), "Net Income − Marketing Spend"],
           ],
           secondary = [
-            ["gmvInc", "GMV incl. tax", fmt.money(s.gmvInc)],
-            ["customers", "Purchasing users", fmt.num(s.customers)],
-            ["discount", "Discount amount", fmt.money(s.discount)],
-            ["tax", "Tax", fmt.money(s.tax)],
-            [
-              "promoOrderRate",
-              "% Promo order share",
-              fmt.pct(s.promoOrderRate),
-            ],
+            ["gmvExc", "GMV excl. tax", fmt.money(s.gmvExc)],
+            ["tax", "Taxes", fmt.money(s.tax)],
+            ["promotionSpend", "Promotion Spend", fmt.money(s.promotionSpend)],
+            ["marketingSpend", "Marketing Spend", fmt.money(s.marketingSpend)],
+            ["paygateFeeSpend", "Paygate Fee Spend", fmt.money(s.paygateFeeSpend)],
+            ["orders", "Orders", fmt.num(s.orders)],
+            ["promoOrders", "Promo Orders", fmt.num(s.promoOrders)],
+            ["qty", "Quantity", fmt.num(s.qty)],
+            ["qtyPerOrder", "Item Per Order", fmt.avg(s.qtyPerOrder)],
             ["aov", "Average order value", fmt.money(s.aov)],
           ];
         return (
@@ -1436,6 +1464,48 @@
           return fmt.num(v);
         return fmt.money(v);
       }
+      function normalizeFinancialRow(row) {
+        if (!row || typeof row !== "object") return row;
+        const firstValid = (...values) => values.find((v) => valid(v));
+        row.tax = firstValid(row.tax, row.taxes);
+        row.promotionSpend = firstValid(
+          row.promotionSpend,
+          row.promoSpend,
+          row.discount,
+        );
+        row.paygateFeeSpend = firstValid(
+          row.paygateFeeSpend,
+          row.paygateSpend,
+          row.paygate,
+        );
+        row.marketingSpend = firstValid(
+          row.marketingSpend,
+          row.marketingCost,
+          row.adSpend,
+        );
+        if (valid(row.gmvInc) && valid(row.tax))
+          row.gmvExc = Number(row.gmvInc) - Number(row.tax);
+        if (valid(row.gmvInc) && valid(row.promotionSpend))
+          row.actualPaid = Number(row.gmvInc) - Number(row.promotionSpend);
+        if (valid(row.actualPaid) && valid(row.paygateFeeSpend))
+          row.netInc = Number(row.actualPaid) - Number(row.paygateFeeSpend);
+        if (valid(row.netInc) && valid(row.marketingSpend))
+          row.cm1 = Number(row.netInc) - Number(row.marketingSpend);
+        else row.cm1 = null;
+        if (valid(row.gmvInc) && valid(row.orders) && Number(row.orders) !== 0)
+          row.aov = Number(row.gmvInc) / Number(row.orders);
+        if (valid(row.qty) && valid(row.orders) && Number(row.orders) !== 0)
+          row.qtyPerOrder = Number(row.qty) / Number(row.orders);
+        return row;
+      }
+      function normalizeDashboardData(data) {
+        if (!data || typeof data !== "object") return data;
+        normalizeFinancialRow(data.summary);
+        ["trend", "markets", "detail", "segments"].forEach((key) => {
+          if (Array.isArray(data[key])) data[key].forEach(normalizeFinancialRow);
+        });
+        return data;
+      }
       async function load() {
         Object.values(S.charts).forEach((c) => c.destroy());
         S.charts = {};
@@ -1448,7 +1518,7 @@
         $("content").innerHTML =
           '<div class="card empty">Loading dashboard…</div>';
         try {
-          S.data = await api(S.view, params());
+          S.data = normalizeDashboardData(await api(S.view, params()));
           render();
           $("status").textContent = dataStatus();
         } catch (e) {
@@ -1523,8 +1593,16 @@
             "GMV_incTax − taxes, aggregated on the same eligible-order scope.",
           ],
           [
-            "Net_income_incTax",
-            "Actual customer paid − payment-gateway fee incl. tax. This is not net profit or contribution margin.",
+            "Actual Paid incl. Tax",
+            "GMV_incTax − Promotion Spend.",
+          ],
+          [
+            "Net Income incl. Tax",
+            "Actual Paid incl. Tax − Paygate Fee Spend.",
+          ],
+          [
+            "Cross Margin 1 incl. Tax",
+            "Net Income incl. Tax − Marketing Spend.",
           ],
           ["Orders", "Count distinct eligible order IDs after deduplication."],
           [
@@ -1558,9 +1636,20 @@
       }
       function renderMarket() {
         const d = S.data;
+        const marketRows = Array.isArray(d.markets)
+          ? d.markets
+          : Object.entries(d.markets || {}).map(([market, values]) => ({
+              market,
+              ...(values || {}),
+            }));
+        const marketLabels = marketRows.map((row, index) =>
+          typeof row === "string"
+            ? row
+            : row.market || row.name || row.country || row.shop || `Market ${index + 1}`,
+        );
         $("content").innerHTML =
           metrics(d.summary) +
-          `<div class="grid2">${card("Absolute performance over time", canvas("absTrend"), sel("absTrendSel", abs, "gmvExc"))}${card("Percentage performance over time", canvas("pctTrend"), sel("pctTrendSel", rates, "promoOrderRate"))}</div><div class="grid3">${card("Market comparison", canvas("marketBar"), sel("marketSel", abs, "gmvExc"))}${card("Market contribution", canvas("marketPie", true), sel("pieSel", abs, "gmvExc"))}</div>` +
+          `<div class="grid2">${card("Absolute performance over time", canvas("absTrend"), sel("absTrendSel", abs, "gmvInc"))}${card("Percentage performance over time", canvas("pctTrend"), sel("pctTrendSel", rates, "promoOrderRate"))}</div><div class="grid3">${card("Market comparison", canvas("marketBar"), sel("marketSel", abs, "gmvInc"))}${card("Market contribution", canvas("marketPie", true), sel("pieSel", abs, "gmvInc"))}</div>` +
           card(
             "Market comparison by selected period",
             tbl(
@@ -1616,11 +1705,11 @@
           chart(
             "marketBar",
             "bar",
-            d.markets.map((x) => x.name),
+            marketLabels,
             [
               {
                 label: abs[m],
-                data: d.markets.map((x) => x[m]),
+                data: marketRows.map((x) => x[m]),
                 backgroundColor: "#003da5",
               },
             ],
@@ -1629,11 +1718,11 @@
           chart(
             "marketPie",
             "doughnut",
-            d.markets.map((x) => x.name),
+            marketLabels,
             [
               {
-                data: d.markets.map((x) => x[p]),
-                backgroundColor: palette(d.markets.length),
+                data: marketRows.map((x) => x[p]),
+                backgroundColor: palette(marketRows.length),
               },
             ],
           );
@@ -1763,7 +1852,7 @@
         const d = S.data;
         $("content").innerHTML =
           metrics(d.summary) +
-          `<div class="grid3">${card("Segment comparison", canvas("segAbs"), sel("segAbsSel", abs, "gmvExc"))}${card("Segment contribution", canvas("segPie", true), sel("segPieSel", abs, "gmvExc"))}</div><div class="grid2">${card("Segment rates", canvas("segPct"), sel("segPctSel", rates, "promoOrderRate"))}${card("Segment performance over time", canvas("segTrend"), sel("segTrendSel", abs, "gmvExc"))}</div>` +
+          `<div class="grid3">${card("Segment comparison", canvas("segAbs"), sel("segAbsSel", abs, "gmvInc"))}${card("Segment contribution", canvas("segPie", true), sel("segPieSel", abs, "gmvInc"))}</div><div class="grid2">${card("Segment rates", canvas("segPct"), sel("segPctSel", rates, "promoOrderRate"))}${card("Segment performance over time", canvas("segTrend"), sel("segTrendSel", abs, "gmvInc"))}</div>` +
           card(
             "Segment comparison by month",
             tbl(
@@ -2046,6 +2135,7 @@
             qty: 54000,
             shipping: 24000,
             discount: 65000,
+            marketingSpend: 115000,
             tax: 130000,
             paygate: 16000,
             promoOrders: 550,
