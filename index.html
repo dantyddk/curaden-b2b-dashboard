@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Dashboard version: Embedded turnover metrics v5, 22 Oct 2026 -->
+<!-- Dashboard version: Embedded turnover metrics + two-month default, 28 Oct 2026 -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -1292,7 +1292,7 @@
         count.className = "field";
         count.id = "rangeCountField";
         count.innerHTML =
-          '<label>Number</label><input id="rangeCount" type="number" min="1" max="99" step="1" value="3" inputmode="numeric">';
+          '<label>Number</label><input id="rangeCount" type="number" min="1" max="99" step="1" value="2" inputmode="numeric">';
         fromField.parentNode.insertBefore(type, fromField);
         fromField.parentNode.insertBefore(count, fromField);
         $("rangeType").onchange = () => updateTimeline(true);
@@ -1661,7 +1661,7 @@
           ],
         ];
         $("content").innerHTML =
-          `<div class="readme"><div class="card"><h3>Metric definitions & calculation logic</h3>${defs.map((x) => `<div class="definition"><b>${x[0]}</b><div>${x[1]}</div></div>`).join("")}</div><div class="card"><h3>Dashboard behavior</h3><p>The dashboard opens with the latest three months. Select a relative timeline or choose Custom to enter exact dates. Filters are applied only after selecting Apply. Monetary values use EUR; summary money is rounded to whole euros, counts to integers and rates to one decimal place.</p></div><div class="notice">Standard version: Curaden Dashboard Standard v1.0. Data-through is shown in the header.</div></div>`;
+          `<div class="readme"><div class="card"><h3>Metric definitions & calculation logic</h3>${defs.map((x) => `<div class="definition"><b>${x[0]}</b><div>${x[1]}</div></div>`).join("")}</div><div class="card"><h3>Dashboard behavior</h3><p>The dashboard opens with the latest two months. Select a relative timeline or choose Custom to enter exact dates. Filters are applied only after selecting Apply. Monetary values use EUR; summary money is rounded to whole euros, counts to integers and rates to one decimal place.</p></div><div class="notice">Standard version: Curaden Dashboard Standard v1.0. Data-through is shown in the header.</div></div>`;
       }
       function renderMarket() {
         const d = S.data;
@@ -2102,7 +2102,7 @@
         if (S.boot) {
           $("market").value = "All";
           $("rangeType").value = "months";
-          $("rangeCount").value = 3;
+          $("rangeCount").value = 2;
           updateTimeline(true);
         }
         $("grain").value = "month";
