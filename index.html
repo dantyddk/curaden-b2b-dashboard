@@ -1589,9 +1589,15 @@
           render();
           $("status").textContent = dataStatus();
         } catch (e) {
-          $("content").innerHTML =
-            `<div class="notice error">${e.message}</div>`;
-          $("status").textContent = "Connection error";
+          if (S.view === "category") {
+            S.data = normalizeDashboardData(mock("category"));
+            render();
+            $("content").insertAdjacentHTML("afterbegin", `<div class="notice error">Category API needs to be redeployed. Showing preview data so the new UX can still be reviewed. Technical detail: ${esc(e.message)}</div>`);
+            $("status").textContent = "Preview data · API redeploy required";
+          } else {
+            $("content").innerHTML = `<div class="notice error">${e.message}</div>`;
+            $("status").textContent = "Connection error";
+          }
         } finally {
           $("main").classList.remove("loading");
         }
