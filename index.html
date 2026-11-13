@@ -1716,7 +1716,7 @@
           ],
         ];
         $("content").innerHTML =
-          `<div class="readme"><div class="card"><h3>Metric definitions & calculation logic</h3>${defs.map((x) => `<div class="definition"><b>${x[0]}</b><div>${x[1]}</div></div>`).join("")}</div><div class="card"><h3>Dashboard behavior</h3><p>The dashboard opens with the latest two months. Select a relative timeline or choose Custom to enter exact dates. Filters are applied only after selecting Apply. Monetary values use EUR; summary money is rounded to whole euros, counts to integers and rates to one decimal place.</p></div><div class="notice">Standard version: Curaden Dashboard Standard v1.0. Data-through is shown in the header.</div></div>`;
+          `<div class="readme"><div class="card"><h3>Metric definitions & calculation logic</h3>${defs.map((x) => `<div class="definition"><b>${x[0]}</b><div>${x[1]}</div></div>`).join("")}</div><div class="card"><h3>Dashboard behavior</h3><p>The dashboard opens with the latest one month and daily granularity. Select a relative timeline or choose Custom to enter exact dates. Filters are applied only after selecting Apply. Monetary values use EUR; summary money is rounded to whole euros, counts to integers and rates to one decimal place.</p></div><div class="notice">Standard version: Curaden Dashboard Standard v1.0. Data-through is shown in the header.</div></div>`;
       }
       function renderMarket() {
         const d = S.data;
