@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Dashboard version: Embedded turnover metrics + two-month default, 28 Oct 2026 -->
+<!-- Dashboard version: One-month daily default for lighter loading, 13 Nov 2026 -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -591,7 +591,7 @@
             ><select id="grain">
               <option value="month">Month</option>
               <option value="week">Week</option>
-              <option value="day">Day</option>
+              <option value="day" selected>Day</option>
             </select>
           </div>
           <div class="field hidden" id="categoryField">
@@ -1333,7 +1333,7 @@
         count.className = "field";
         count.id = "rangeCountField";
         count.innerHTML =
-          '<label>Number</label><input id="rangeCount" type="number" min="1" max="99" step="1" value="2" inputmode="numeric">';
+          '<label>Number</label><input id="rangeCount" type="number" min="1" max="99" step="1" value="1" inputmode="numeric">';
         fromField.parentNode.insertBefore(type, fromField);
         fromField.parentNode.insertBefore(count, fromField);
         $("rangeType").onchange = () => updateTimeline(true);
@@ -2223,10 +2223,10 @@
         if (S.boot) {
           $("market").value = "All";
           $("rangeType").value = "months";
-          $("rangeCount").value = 2;
+          $("rangeCount").value = 1;
           updateTimeline(true);
         }
-        $("grain").value = "month";
+        $("grain").value = "day";
         $("categoryFilter").value = "All";
         $("groupFilter").value = "All";
         $("search").value = "";
