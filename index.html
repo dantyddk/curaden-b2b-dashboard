@@ -1140,6 +1140,12 @@
       // Paste the Category Performance Apps Script Web App URL here after deployment.
       const CATEGORY_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxdbZL4GIpq3f6h0FY0a18lSZyhBbNeqxPrwx6vxsoWs6Le0qoH6zbxEHPCFXUtY-OPBw/exec";
       const S = { view: "readme", page: 1, boot: null, categoryBoot: null, charts: {}, data: null };
+      const esc = (value) => String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
       const $ = (x) => document.getElementById(x),
         valid = (v) =>
           v !== null && v !== undefined && Number.isFinite(Number(v)),
@@ -1852,9 +1858,8 @@
         const money=["gmvInc","actualPaid","netIncTax","netIncExTax","aov"],pct=["promoBurnRate","paygateRate","turnoverRate","growth"],colors=palette(Math.max(1,categories.length));
         const val=(x,k)=>pct.includes(k)?fmt.pct(x):money.includes(k)?fmt.money(x):k==="qtyPerOrder"?fmt.avg(x):fmt.num(x);
         const selector=(id,keys,selected)=>sel(id,Object.fromEntries(keys.map(k=>[k,labels[k]])),selected);
-        const primary=[["gmvInc","GMV incl. Tax",fmt.money(s.gmvInc)],["actualPaid","Actual Paid incl. Tax",fmt.money(s.actualPaid)],["netIncTax","Net Income incl. Tax",fmt.money(s.netIncTax)],["netIncExTax","Net Income excl. Tax",fmt.money(s.netIncExTax)],["orders","Orders Containing Product",fmt.num(s.orders)],["allocatedOrders","Allocated Orders",fmt.num(s.allocatedOrders)]];
         const efficiency=tbl([["Category",x=>x.category,0,true],["GMV incl. Tax",x=>fmt.money(x.gmvInc),1],["Net Income excl. Tax",x=>fmt.money(x.netIncExTax),1],["Orders",x=>fmt.num(x.orders),1],["Allocated Orders",x=>fmt.num(x.allocatedOrders),1],["AOV",x=>fmt.money(x.aov),1],["Qty / Order",x=>fmt.avg(x.qtyPerOrder),1],["Growth",x=>fmt.pct(x.growth),1]],categories);
-        $("content").innerHTML=metricCards(primary,"primary-grid")+
+        $("content").innerHTML=
           `<div class="grid2">${card("Performance over time",canvas("catTrend"),selector("catTrendSel",Object.keys(labels),"netIncExTax"))}${card("Category contribution",canvas("catPie",true),selector("catPieSel",["gmvInc","actualPaid","netIncExTax","orders","allocatedOrders","qty"],"netIncExTax"))}</div>`+
           `<div class="cat-section"><h2>Category distribution</h2><p>Click a category to drill down into its Product Group mix and commercial performance.</p></div><div class="grid2">${card("Distribution by metric",`<div id="catStack" class="cat-stack"></div><div id="catLegend" class="cat-legend"></div>`,selector("catDistSel",["gmvInc","actualPaid","netIncExTax","orders","allocatedOrders","qty","aov","growth"],"actualPaid"))}${card("Category efficiency",efficiency)}</div>`+
           `<div class="category-drill">${card("Product Group map",`<div id="catTreemap" class="treemap"></div>`,selector("catMapSel",["gmvInc","actualPaid","netIncExTax","orders","allocatedOrders","qty"],"actualPaid"))}${card("Selected Category profile",`<div id="catProfile" class="profile-grid"></div><div class="category-table-note" style="margin-top:12px">Orders counts every order containing the category. Allocated Orders distributes the order contribution across categories.</div>`)}</div>`+
