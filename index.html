@@ -540,6 +540,7 @@
     </style>
     <style>
       .category-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 14px}.category-controls .field{min-width:0}.category-controls select{width:100%}.category-insights{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}.category-insight{padding:16px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow)}.category-insight small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:800}.category-insight strong{display:block;color:var(--blue);font-size:1.15rem;margin:8px 0 4px}.bubble-wrap{height:420px}.category-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:16px}.category-table-note{color:var(--muted);font-size:.78rem;margin:-4px 0 12px}@media(max-width:1050px){.category-controls{grid-template-columns:repeat(2,1fr)}.category-grid,.category-insights{grid-template-columns:1fr}}
+      .cat-section{margin:20px 0 10px}.cat-section h2{font:700 1.15rem var(--font-heading);color:var(--ink);margin:0}.cat-section p{color:var(--muted);margin:3px 0 0;font-size:.78rem}.cat-stack{display:flex;height:46px;border-radius:12px;overflow:hidden;margin:12px 0}.cat-stack button{border:0;color:#fff;font-weight:800;min-width:24px;cursor:pointer}.cat-legend{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.cat-chip{border:1px solid var(--line);border-radius:12px;background:#fff;padding:11px;text-align:left;cursor:pointer}.cat-chip.active{box-shadow:inset 3px 0 var(--blue);background:#f4f8fd}.cat-chip b,.cat-chip span{display:block}.cat-chip span{color:var(--muted);font-size:.72rem;margin-top:3px}.category-drill{display:grid;grid-template-columns:1.35fr .65fr;gap:15px;margin:15px 0}.treemap{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:70px;gap:8px}.tree-tile{border-radius:12px;padding:12px;color:var(--ink);display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}.tree-tile strong{font-size:.78rem}.tree-tile .tree-value{font-size:1.1rem;font-weight:900}.tree-growth{position:absolute;right:8px;top:8px;background:#ffffffc9;border-radius:999px;padding:3px 6px;font-size:.68rem;font-weight:800}.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.profile-stat{border:1px solid var(--line);border-radius:11px;padding:10px;background:#fafbfd}.profile-stat span{display:block;color:var(--muted);font-size:.65rem;text-transform:uppercase;font-weight:800}.profile-stat strong{display:block;color:var(--ink);font-size:1rem;margin-top:5px}.heatmap{display:grid;gap:5px;min-width:600px}.heat-cell{border-radius:8px;padding:8px;text-align:center;font-weight:800;font-size:.72rem}.market-bars,.growth-list{display:grid;gap:10px}.market-bar{display:grid;grid-template-columns:100px 1fr 48px;align-items:center;gap:8px}.market-track{height:13px;background:#edf1f5;border-radius:999px;overflow:hidden}.market-fill{height:100%;background:var(--blue);border-radius:999px}.growth-row{display:grid;grid-template-columns:minmax(120px,1fr) 2fr auto;gap:10px;align-items:center}.growth-row .market-track{height:9px}.growth-row .market-fill{background:var(--pink)}@media(max-width:1050px){.category-drill{grid-template-columns:1fr}.cat-legend{grid-template-columns:repeat(2,1fr)}}
     </style>
   </head>
   <body>
@@ -592,6 +593,14 @@
               <option value="week">Week</option>
               <option value="day">Day</option>
             </select>
+          </div>
+          <div class="field hidden" id="categoryField">
+            <label>Category</label
+            ><select id="categoryFilter"><option>All</option></select>
+          </div>
+          <div class="field hidden" id="groupField">
+            <label>Product Group</label
+            ><select id="groupFilter"><option>All</option></select>
           </div>
           <div class="field hidden" id="searchField">
             <label>User email</label
@@ -1129,8 +1138,8 @@
       const APPS_SCRIPT_URL =
         "https://script.google.com/macros/s/AKfycbxS0mSN90zsG7WsaK3AQuSCIwEf4SLcNDZOJODAdDzwtqKeyZhiwAdR0H03V4VUpIkg/exec";
       // Paste the Category Performance Apps Script Web App URL here after deployment.
-      const CATEGORY_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOa2Qui0yjIYKDBS5hMU8Gwv5Bv3hqzf7YknKRofIAb2hljJ8os_IaSjJXIMGv_Lmseg/exec";
-      const S = { view: "readme", page: 1, boot: null, charts: {}, data: null };
+      const CATEGORY_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxnOpU6Fara-CC8nMApL3caobAw-ygyRfATsWEbDlB7UH1p10UcnIjCYMbpmqOc35qKDQ/exec";
+      const S = { view: "readme", page: 1, boot: null, categoryBoot: null, charts: {}, data: null };
       const $ = (x) => document.getElementById(x),
         valid = (v) =>
           v !== null && v !== undefined && Number.isFinite(Number(v)),
@@ -1242,7 +1251,9 @@
         gmvPerDiscount: "GMV per € discount",
       };
       function api(action, p = {}) {
-        const endpoint = action === "category" ? CATEGORY_APPS_SCRIPT_URL : APPS_SCRIPT_URL;
+        const isCategoryApi = action === "category" || action === "categoryBootstrap";
+        const endpoint = isCategoryApi ? CATEGORY_APPS_SCRIPT_URL : APPS_SCRIPT_URL;
+        const remoteAction = action === "categoryBootstrap" ? "bootstrap" : action;
         if (endpoint.startsWith("YOUR_"))
           return Promise.resolve(mock(action));
         return new Promise((ok, no) => {
@@ -1257,13 +1268,15 @@
           s.src =
             endpoint +
             "?" +
-            new URLSearchParams({ action, ...p, callback: cb });
+            new URLSearchParams({ action: remoteAction, ...p, callback: cb });
           document.body.appendChild(s);
         });
       }
       function params() {
         return {
           market: $("market").value,
+          category: $("categoryFilter").value,
+          group: $("groupFilter").value,
           from: $("from").value,
           to: $("to").value,
           grain: $("grain").value,
@@ -1558,6 +1571,13 @@
         $("content").innerHTML =
           '<div class="card empty">Loading dashboard…</div>';
         try {
+          if (S.view === "category" && !S.categoryBoot) {
+            S.categoryBoot = await api("categoryBootstrap");
+            const categorySelect = $("categoryFilter");
+            categorySelect.innerHTML = '<option>All</option>' + (S.categoryBoot.categories || []).map(x => `<option>${esc(x)}</option>`).join("");
+            const groupSelect = $("groupFilter");
+            groupSelect.innerHTML = '<option>All</option>' + (S.categoryBoot.groups || []).map(x => `<option>${esc(x)}</option>`).join("");
+          }
           S.data = normalizeDashboardData(await api(S.view, params()));
           render();
           $("status").textContent = dataStatus();
@@ -1616,7 +1636,7 @@
         ({
           readme: renderReadme,
           market: renderMarket,
-          category: renderCategory,
+          category: renderCategoryExperience,
           promo: renderPromo,
           segment: renderSegment,
           user: renderUser,
@@ -1777,16 +1797,16 @@
         const d = S.data || {}, s = d.summary || {}, categories = d.categories || [], groups = d.groups || [], detail = d.marketDetail || [], trend = d.trend || [];
         const catMetrics = {
           gmvInc: "GMV incl. Tax", actualPaid: "Actual Paid incl. Tax", netIncTax: "Net Income incl. Tax",
-          netIncExTax: "Net Income excl. Tax", allocatedOrders: "Allocated Orders", orders: "Orders",
+          netIncExTax: "Net Income excl. Tax", allocatedOrders: "Allocated Orders", orders: "Orders Containing Product",
           aov: "AOV", qtyPerOrder: "Quantity per Order", promoBurnRate: "% Promo Burn",
-          paygateRate: "% Paygate Fee", turnoverRate: "% Turnover", qty: "Quantity", growth: "Growth %"
+          paygateRate: "% Paygate Fee", turnoverRate: "% Turnover", qty: "Quantity", growth: "Net Income excl. Tax YoY Growth %"
         };
         const moneyKeys = ["gmvInc","actualPaid","netIncTax","netIncExTax","aov"], pctKeys = ["promoBurnRate","paygateRate","turnoverRate","growth"];
         const cv = (v,k) => pctKeys.includes(k) ? fmt.pct(v) : moneyKeys.includes(k) ? fmt.money(v) : k === "qtyPerOrder" ? fmt.avg(v) : fmt.num(v);
         const primary = [
           ["gmvInc","GMV incl. Tax",fmt.money(s.gmvInc)], ["actualPaid","Actual Paid incl. Tax",fmt.money(s.actualPaid)],
           ["netIncTax","Net Income incl. Tax",fmt.money(s.netIncTax)], ["netIncExTax","Net Income excl. Tax",fmt.money(s.netIncExTax)],
-          ["orders","Orders",fmt.num(s.orders)], ["allocatedOrders","Allocated Orders",fmt.num(s.allocatedOrders)]
+          ["orders","Orders Containing Product",fmt.num(s.orders)], ["allocatedOrders","Allocated Orders",fmt.num(s.allocatedOrders)]
         ];
         const controls = (id, keys, selected) => sel(id,Object.fromEntries(keys.map(k=>[k,catMetrics[k]])),selected);
         const bestCat = [...categories].sort((a,b)=>(b.growth||0)-(a.growth||0))[0] || {}, bestGroup = [...groups].sort((a,b)=>(b.growth||0)-(a.growth||0))[0] || {}, bestMarket = [...detail].sort((a,b)=>(b.growth||0)-(a.growth||0))[0] || {};
@@ -1794,20 +1814,49 @@
           `<div class="grid2">${card("Performance over time",canvas("catTrend"),controls("catTrendSel",Object.keys(catMetrics),"netIncExTax"))}${card("Category contribution",canvas("catPie",true),controls("catPieSel",["gmvInc","actualPaid","netIncExTax","orders","allocatedOrders","qty"],"netIncExTax"))}</div>` +
           card("Category efficiency", tbl([
             ["Category",x=>x.category||x.name,0,true],["GMV incl. Tax",x=>fmt.money(x.gmvInc),1],["Net Income excl. Tax",x=>fmt.money(x.netIncExTax),1],
-            ["Orders",x=>fmt.num(x.orders),1],["Allocated Orders",x=>fmt.num(x.allocatedOrders),1],["AOV",x=>fmt.money(x.aov),1],["Qty / Order",x=>fmt.avg(x.qtyPerOrder),1],["Growth",x=>fmt.pct(x.growth),1]
+            ["Orders Containing Product",x=>fmt.num(x.orders),1],["Allocated Orders",x=>fmt.num(x.allocatedOrders),1],["AOV",x=>fmt.money(x.aov),1],["Qty / Order",x=>fmt.avg(x.qtyPerOrder),1],["NI excl. Tax YoY Growth",x=>fmt.pct(x.growth),1]
           ],categories)) +
           `<div class="card"><div class="cardhead"><h2>Product portfolio map</h2></div><div class="category-controls"><div class="field"><label>Display level</label><select id="bubbleLevel"><option value="group">Product Group</option><option value="category">Product Category</option></select></div>${controls("bubbleSize",["gmvInc","actualPaid","netIncExTax","orders","allocatedOrders","qty"],"netIncExTax")}${controls("bubbleX",Object.keys(catMetrics),"netIncExTax")}${controls("bubbleY",Object.keys(catMetrics),"growth")}</div><div class="bubble-wrap"><canvas id="categoryBubble"></canvas></div></div>` +
           `<div class="category-insights"><div class="category-insight"><small>Fastest-growing category</small><strong>${bestCat.category||bestCat.name||"—"}</strong><span>${fmt.pct(bestCat.growth)}</span></div><div class="category-insight"><small>Fastest-growing product group</small><strong>${bestGroup.productGroup||bestGroup.name||"—"}</strong><span>${fmt.pct(bestGroup.growth)}</span></div><div class="category-insight"><small>Fastest market × portfolio</small><strong>${bestMarket.market||"—"}</strong><span>${bestMarket.category||"—"} · ${bestMarket.productGroup||"—"} · ${fmt.pct(bestMarket.growth)}</span></div></div>` +
-          `<div class="category-grid">${card("Top product groups",tbl([["Product Group",x=>x.productGroup||x.name,0,true],["Category",x=>x.category||"—",0,true],["Net Income excl. Tax",x=>fmt.money(x.netIncExTax),1],["Share",x=>fmt.pct(x.share),1],["AOV",x=>fmt.money(x.aov),1],["Growth",x=>fmt.pct(x.growth),1]],groups.slice(0,15)))}${card("Fastest-growing portfolio",tbl([["Level",x=>x.level,0],["Name",x=>x.name,0],["Growth",x=>fmt.pct(x.growth),1]],(d.growthLeaders||[]).slice(0,15)))}</div>` +
+          `<div class="category-grid">${card("Top product groups",tbl([["Product Group",x=>x.productGroup||x.name,0,true],["Category",x=>x.category||"—",0,true],["Net Income excl. Tax",x=>fmt.money(x.netIncExTax),1],["Share",x=>fmt.pct(x.share),1],["AOV",x=>fmt.money(x.aov),1],["NI excl. Tax YoY Growth",x=>fmt.pct(x.growth),1]],groups.slice(0,15)))}${card("Fastest-growing portfolio",tbl([["Level",x=>x.level,0],["Name",x=>x.name,0],["NI excl. Tax YoY Growth",x=>fmt.pct(x.growth),1]],(d.growthLeaders||[]).slice(0,15)))}</div>` +
           card("Market × Category × Product Group performance",`<div class="category-table-note">Full commercial view for the selected market and timeline.</div>`+tbl([
             ["Market",x=>x.market,0,true],["Category",x=>x.category,0,true],["Product Group",x=>x.productGroup,0,true],["GMV incl. Tax",x=>fmt.money(x.gmvInc),1],
-            ["Actual Paid",x=>fmt.money(x.actualPaid),1],["Net Income excl. Tax",x=>fmt.money(x.netIncExTax),1],["Orders",x=>fmt.num(x.orders),1],["Allocated Orders",x=>fmt.num(x.allocatedOrders),1],
-            ["AOV",x=>fmt.money(x.aov),1],["Qty / Order",x=>fmt.avg(x.qtyPerOrder),1],["Promo Burn",x=>fmt.pct(x.promoBurnRate),1],["Growth",x=>fmt.pct(x.growth),1]
+            ["Actual Paid",x=>fmt.money(x.actualPaid),1],["Net Income excl. Tax",x=>fmt.money(x.netIncExTax),1],["Orders Containing Product",x=>fmt.num(x.orders),1],["Allocated Orders",x=>fmt.num(x.allocatedOrders),1],
+            ["AOV",x=>fmt.money(x.aov),1],["Qty / Order",x=>fmt.avg(x.qtyPerOrder),1],["Promo Burn",x=>fmt.pct(x.promoBurnRate),1],["NI excl. Tax YoY Growth",x=>fmt.pct(x.growth),1]
           ],detail));
         const drawTrend = () => { const k=$("catTrendSel").value; chart("catTrend","bar",trend.map(x=>x.period),[{label:catMetrics[k],data:trend.map(x=>pctKeys.includes(k)&&valid(x[k])?x[k]*100:x[k]),backgroundColor:"#003da5"}]); };
         const drawPie = () => { const k=$("catPieSel").value; chart("catPie","doughnut",categories.map(x=>x.category||x.name),[{label:catMetrics[k],data:categories.map(x=>x[k]),backgroundColor:palette(categories.length)}]); };
         const drawBubble = () => { destroy("categoryBubble"); const rows=$("bubbleLevel").value==="category"?categories:groups, xk=$("bubbleX").value, yk=$("bubbleY").value, sk=$("bubbleSize").value, max=Math.max(1,...rows.map(x=>Number(x[sk])||0)); S.charts.categoryBubble=new Chart($("categoryBubble"),{type:"bubble",data:{datasets:rows.map((r,i)=>({label:r.productGroup||r.category||r.name,data:[{x:Number(r[xk])||0,y:Number(r[yk])||0,r:7+18*Math.sqrt((Number(r[sk])||0)/max)}],backgroundColor:palette(rows.length)[i]+"cc"}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${catMetrics[xk]} ${cv(c.raw.x,xk)} · ${catMetrics[yk]} ${cv(c.raw.y,yk)}`}}},scales:{x:{title:{display:true,text:catMetrics[xk]}},y:{title:{display:true,text:catMetrics[yk]}}}}}); };
         ["catTrendSel"].forEach(i=>$(i).onchange=drawTrend);["catPieSel"].forEach(i=>$(i).onchange=drawPie);["bubbleLevel","bubbleSize","bubbleX","bubbleY"].forEach(i=>$(i).onchange=drawBubble);drawTrend();drawPie();drawBubble();
+      }
+      function renderCategoryExperience() {
+        const d=S.data||{},s=d.summary||{},categories=d.categories||[],groups=d.groups||[],detail=d.marketDetail||[],trend=d.trend||[],lyTrend=d.lyTrend||[];
+        const labels={gmvInc:"GMV incl. Tax",actualPaid:"Actual Paid incl. Tax",netIncTax:"Net Income incl. Tax",netIncExTax:"Net Income excl. Tax",allocatedOrders:"Allocated Orders",orders:"Orders Containing Product",aov:"AOV",qtyPerOrder:"Quantity per Order",promoBurnRate:"Promo Burn %",paygateRate:"Paygate Fee %",turnoverRate:"Turnover %",qty:"Quantity",growth:"Net Income excl. Tax YoY Growth %"};
+        const money=["gmvInc","actualPaid","netIncTax","netIncExTax","aov"],pct=["promoBurnRate","paygateRate","turnoverRate","growth"],colors=palette(Math.max(1,categories.length));
+        const val=(x,k)=>pct.includes(k)?fmt.pct(x):money.includes(k)?fmt.money(x):k==="qtyPerOrder"?fmt.avg(x):fmt.num(x);
+        const selector=(id,keys,selected)=>sel(id,Object.fromEntries(keys.map(k=>[k,labels[k]])),selected);
+        const primary=[["gmvInc","GMV incl. Tax",fmt.money(s.gmvInc)],["actualPaid","Actual Paid incl. Tax",fmt.money(s.actualPaid)],["netIncTax","Net Income incl. Tax",fmt.money(s.netIncTax)],["netIncExTax","Net Income excl. Tax",fmt.money(s.netIncExTax)],["orders","Orders Containing Product",fmt.num(s.orders)],["allocatedOrders","Allocated Orders",fmt.num(s.allocatedOrders)]];
+        const efficiency=tbl([["Category",x=>x.category,0,true],["GMV incl. Tax",x=>fmt.money(x.gmvInc),1],["Net Income excl. Tax",x=>fmt.money(x.netIncExTax),1],["Orders",x=>fmt.num(x.orders),1],["Allocated Orders",x=>fmt.num(x.allocatedOrders),1],["AOV",x=>fmt.money(x.aov),1],["Qty / Order",x=>fmt.avg(x.qtyPerOrder),1],["Growth",x=>fmt.pct(x.growth),1]],categories);
+        $("content").innerHTML=metricCards(primary,"primary-grid")+
+          `<div class="grid2">${card("Performance over time",canvas("catTrend"),selector("catTrendSel",Object.keys(labels),"netIncExTax"))}${card("Category contribution",canvas("catPie",true),selector("catPieSel",["gmvInc","actualPaid","netIncExTax","orders","allocatedOrders","qty"],"netIncExTax"))}</div>`+
+          `<div class="cat-section"><h2>Category distribution</h2><p>Click a category to drill down into its Product Group mix and commercial performance.</p></div><div class="grid2">${card("Distribution by metric",`<div id="catStack" class="cat-stack"></div><div id="catLegend" class="cat-legend"></div>`,selector("catDistSel",["gmvInc","actualPaid","netIncExTax","orders","allocatedOrders","qty","aov","growth"],"actualPaid"))}${card("Category efficiency",efficiency)}</div>`+
+          `<div class="category-drill">${card("Product Group map",`<div id="catTreemap" class="treemap"></div>`,selector("catMapSel",["gmvInc","actualPaid","netIncExTax","orders","allocatedOrders","qty"],"actualPaid"))}${card("Selected Category profile",`<div id="catProfile" class="profile-grid"></div><div class="category-table-note" style="margin-top:12px">Orders counts every order containing the category. Allocated Orders distributes the order contribution across categories.</div>`)}</div>`+
+          `<div class="cat-section"><h2>Product performance</h2><p>Explore growth, scale, margin and efficiency at Category or Product Group level.</p></div>`+
+          `<div class="card"><div class="cardhead"><h2>Performance portfolio map</h2></div><div class="category-controls"><div class="field"><label>Display level</label><select id="bubbleLevel"><option value="group">Product Group</option><option value="category">Product Category</option></select></div>${selector("bubbleSize",["gmvInc","actualPaid","netIncExTax","orders","allocatedOrders","qty"],"netIncExTax")}${selector("bubbleX",Object.keys(labels),"netIncExTax")}${selector("bubbleY",Object.keys(labels),"growth")}</div><div class="bubble-wrap"><canvas id="categoryBubble"></canvas></div></div>`+
+          `<div class="category-grid">${card("Top product groups",tbl([["Product Group",x=>x.productGroup,0,true],["Category",x=>x.category,0,true],["Net Income excl. Tax",x=>fmt.money(x.netIncExTax),1],["Share",x=>fmt.pct(x.share),1],["AOV",x=>fmt.money(x.aov),1],["Growth",x=>fmt.pct(x.growth),1]],groups.slice(0,15)))}${card("Fastest-growing portfolio",`<div id="growthLeaders" class="growth-list"></div>`,selector("growthMetric",["gmvInc","actualPaid","netIncExTax","orders","allocatedOrders","qty"],"netIncExTax"))}</div>`+
+          `<div class="cat-section"><h2>Country differences</h2><p>Assortment preference and commercial behavior by market.</p></div>`+
+          `<div class="grid2">${card("Category preference heatmap",`<div style="overflow:auto"><div id="catHeat" class="heatmap"></div></div>`,selector("heatMetric",["gmvInc","actualPaid","netIncExTax","orders","allocatedOrders","qty"],"netIncExTax"))}${card("Market scale comparison",`<div id="marketBars" class="market-bars"></div>`,selector("marketMetric",["gmvInc","actualPaid","netIncExTax","orders","allocatedOrders","qty"],"netIncExTax"))}</div>`+
+          `<div class="grid2">${card("Fastest-growing by market",`<div id="marketLeaders" class="growth-list"></div>`)}${card("Growth comparison",`<div id="marketGrowth" class="growth-list"></div>`)}</div>`+
+          card("Market × Category × Product Group performance",`<div class="category-table-note">Detailed commercial performance for the selected filters.</div>`+tbl([["Market",x=>x.market,0,true],["Category",x=>x.category,0,true],["Product Group",x=>x.productGroup,0,true],["GMV incl. Tax",x=>fmt.money(x.gmvInc),1],["Actual Paid",x=>fmt.money(x.actualPaid),1],["Net Income excl. Tax",x=>fmt.money(x.netIncExTax),1],["Orders",x=>fmt.num(x.orders),1],["Allocated Orders",x=>fmt.num(x.allocatedOrders),1],["AOV",x=>fmt.money(x.aov),1],["Qty / Order",x=>fmt.avg(x.qtyPerOrder),1],["Promo Burn",x=>fmt.pct(x.promoBurnRate),1],["Growth",x=>fmt.pct(x.growth),1]],detail));
+        let selectedCategory=categories[0]?.category||"";
+        const drawTrend=()=>{const k=$("catTrendSel").value,isPct=pct.includes(k),current=trend.map(x=>isPct?x[k]*100:x[k]),last=trend.map(x=>{const z=lyTrend.find(y=>y.period===x.period);return z?(isPct?z[k]*100:z[k]):null});destroy("catTrend");S.charts.catTrend=new Chart($("catTrend"),{data:{labels:trend.map(x=>x.period),datasets:[{type:"bar",label:"Current period",data:current,backgroundColor:"#003da5"},{type:"line",label:"Same period LY",data:last,borderColor:"#00a3e0",backgroundColor:"#00a3e033",fill:true,tension:.25}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${val(isPct?c.raw/100:c.raw,k)}`}}},scales:{y:{title:{display:true,text:labels[k]},ticks:{callback:v=>isPct?v+"%":v}}}}});};
+        const drawPie=()=>{const k=$("catPieSel").value;chart("catPie","doughnut",categories.map(x=>x.category),[{label:labels[k],data:categories.map(x=>x[k]),backgroundColor:colors}]);};
+        const drawDistribution=()=>{const k=$("catDistSel").value,total=categories.reduce((a,x)=>a+(Number(x[k])||0),0)||1;$("catStack").innerHTML=categories.map((x,i)=>`<button data-cat="${esc(x.category)}" style="width:${Math.max(1,(Number(x[k])||0)/total*100)}%;background:${colors[i]}" title="${esc(x.category)} · ${val(x[k],k)}">${(Number(x[k])||0)/total>.075?fmt.pct((Number(x[k])||0)/total):""}</button>`).join("");$("catLegend").innerHTML=categories.map((x,i)=>`<button class="cat-chip ${x.category===selectedCategory?"active":""}" data-cat="${esc(x.category)}"><b><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${colors[i]};margin-right:6px"></i>${esc(x.category)}</b><strong>${fmt.pct((Number(x[k])||0)/total)}</strong><span>${val(x[k],k)} · click to drill down</span></button>`).join("");document.querySelectorAll("[data-cat]").forEach(el=>el.onclick=()=>{selectedCategory=el.dataset.cat;drawDistribution();drawDetail();});};
+        const drawDetail=()=>{const c=categories.find(x=>x.category===selectedCategory)||categories[0]||{},rows=groups.filter(x=>x.category===c.category),k=$("catMapSel").value,total=rows.reduce((a,x)=>a+(Number(x[k])||0),0)||1,max=Math.max(1,...rows.map(x=>Number(x[k])||0));$("catTreemap").innerHTML=rows.map((x,i)=>{const share=(Number(x[k])||0)/total,cols=Math.max(3,Math.round(share*12)),r=Number(x[k])===max?2:1;return `<div class="tree-tile" style="grid-column:span ${cols};grid-row:span ${r};background:${colors[i%colors.length]}33"><span class="tree-growth">${fmt.pct(x.growth)}</span><strong>${esc(x.productGroup)}</strong><div><div class="tree-value">${val(x[k],k)}</div><small>${fmt.pct(share)} of category</small></div></div>`}).join("")||'<div class="empty">No Product Group data</div>';const top=[...rows].sort((a,b)=>(b[k]||0)-(a[k]||0)).slice(0,2),conc=top.reduce((a,x)=>a+(Number(x[k])||0),0)/total;$("catProfile").innerHTML=[["GMV incl. Tax",fmt.money(c.gmvInc)],["Net Income excl. Tax",fmt.money(c.netIncExTax)],["Orders containing category",fmt.num(c.orders)],["Allocated Orders",fmt.num(c.allocatedOrders)],["AOV",fmt.money(c.aov)],["Top-2 group concentration",fmt.pct(conc)]].map(x=>`<div class="profile-stat"><span>${x[0]}</span><strong>${x[1]}</strong></div>`).join("");};
+        const drawBubble=()=>{destroy("categoryBubble");const rows=$("bubbleLevel").value==="category"?categories:groups,xk=$("bubbleX").value,yk=$("bubbleY").value,sk=$("bubbleSize").value,max=Math.max(1,...rows.map(x=>Number(x[sk])||0));S.charts.categoryBubble=new Chart($("categoryBubble"),{type:"bubble",data:{datasets:rows.map((r,i)=>({label:r.productGroup||r.category,data:[{x:Number(r[xk])||0,y:Number(r[yk])||0,r:7+18*Math.sqrt((Number(r[sk])||0)/max)}],backgroundColor:palette(rows.length)[i]+"cc"}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${labels[xk]} ${val(c.raw.x,xk)} · ${labels[yk]} ${val(c.raw.y,yk)}`}}},scales:{x:{title:{display:true,text:labels[xk]}},y:{title:{display:true,text:labels[yk]}}}}});};
+        const drawGrowth=()=>{const k=$("growthMetric").value,rows=[...categories.map(x=>({...x,name:x.category,level:"Category"})),...groups.map(x=>({...x,name:x.productGroup,level:"Product Group"}))].sort((a,b)=>(b.growth||0)-(a.growth||0)).slice(0,8),max=Math.max(.0001,...rows.map(x=>Math.max(0,x.growth||0)));$("growthLeaders").innerHTML=rows.map(x=>`<div class="growth-row"><div><b>${esc(x.name)}</b><small>${x.level} · ${val(x[k],k)}</small></div><div class="market-track"><div class="market-fill" style="width:${Math.max(0,x.growth||0)/max*100}%"></div></div><strong>${fmt.pct(x.growth)}</strong></div>`).join("");};
+        const drawCountries=()=>{const hk=$("heatMetric").value,mk=$("marketMetric").value,markets=[...new Set(detail.map(x=>x.market))],cats=[...new Set(detail.map(x=>x.category))].slice(0,8);$("catHeat").style.gridTemplateColumns=`120px repeat(${cats.length},minmax(68px,1fr))`;let heat='<b></b>'+cats.map(x=>`<b>${esc(x)}</b>`).join('');markets.forEach(m=>{const rows=detail.filter(x=>x.market===m),tot=rows.reduce((a,x)=>a+(Number(x[hk])||0),0)||1;heat+=`<b>${esc(m)}</b>`+cats.map(c=>{const v=rows.filter(x=>x.category===c).reduce((a,x)=>a+(Number(x[hk])||0),0)/tot,alpha=.12+.75*v;return `<div class="heat-cell" style="background:rgba(0,61,165,${alpha});color:${alpha>.48?'white':'var(--ink)'}">${fmt.pct(v)}</div>`}).join('')});$("catHeat").innerHTML=heat;const marketRows=markets.map(m=>{const rows=detail.filter(x=>x.market===m);return {m,v:rows.reduce((a,x)=>a+(Number(x[mk])||0),0),g:rows.reduce((a,x)=>a+(Number(x.growth)||0)*(Number(x.netIncExTax)||0),0)/(rows.reduce((a,x)=>a+(Number(x.netIncExTax)||0),0)||1),best:[...rows].sort((a,b)=>(b.growth||0)-(a.growth||0))[0]}}).sort((a,b)=>b.v-a.v),max=Math.max(1,...marketRows.map(x=>x.v)),maxG=Math.max(.0001,...marketRows.map(x=>Math.max(0,x.g)));$("marketBars").innerHTML=marketRows.map(x=>`<div class="market-bar"><b>${esc(x.m)}</b><div class="market-track"><div class="market-fill" style="width:${x.v/max*100}%"></div></div><strong>${Math.round(x.v/max*100)}</strong></div>`).join('');$("marketLeaders").innerHTML=marketRows.map(x=>`<div class="profile-stat"><span>${esc(x.m)}</span><strong>${esc(x.best?.category||'—')}</strong><small>${esc(x.best?.productGroup||'—')} · ${fmt.pct(x.best?.growth||0)}</small></div>`).join('');$("marketGrowth").innerHTML=marketRows.map(x=>`<div class="growth-row"><b>${esc(x.m)}</b><div class="market-track"><div class="market-fill" style="width:${Math.max(0,x.g)/maxG*100}%"></div></div><strong>${fmt.pct(x.g)}</strong></div>`).join('');};
+        $("catTrendSel").onchange=drawTrend;$("catPieSel").onchange=drawPie;$("catDistSel").onchange=drawDistribution;$("catMapSel").onchange=drawDetail;["bubbleLevel","bubbleSize","bubbleX","bubbleY"].forEach(id=>$(id).onchange=drawBubble);$("growthMetric").onchange=drawGrowth;$("heatMetric").onchange=drawCountries;$("marketMetric").onchange=drawCountries;drawTrend();drawPie();drawDistribution();drawDetail();drawBubble();drawGrowth();drawCountries();
       }
       function renderPromo() {
         const d = S.data,
@@ -2144,6 +2193,8 @@
           "hidden",
           !["user", "behavior"].includes(v),
         );
+        $("categoryField").classList.toggle("hidden", v !== "category");
+        $("groupField").classList.toggle("hidden", v !== "category");
         load();
       }
       function reset() {
@@ -2154,6 +2205,8 @@
           updateTimeline(true);
         }
         $("grain").value = "month";
+        $("categoryFilter").value = "All";
+        $("groupFilter").value = "All";
         $("search").value = "";
         S.page = 1;
         load();
