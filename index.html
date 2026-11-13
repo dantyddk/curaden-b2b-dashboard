@@ -1572,13 +1572,20 @@
           '<div class="card empty">Loading dashboard…</div>';
         try {
           if (S.view === "category" && !S.categoryBoot) {
-            S.categoryBoot = await api("categoryBootstrap");
-            const categorySelect = $("categoryFilter");
+            try { S.categoryBoot = await api("categoryBootstrap"); }
+            catch (_) { S.categoryBoot = { categories: [], groups: [] }; }
+            const categorySelect = $("categoryFilter"), groupSelect = $("groupFilter");
             categorySelect.innerHTML = '<option>All</option>' + (S.categoryBoot.categories || []).map(x => `<option>${esc(x)}</option>`).join("");
-            const groupSelect = $("groupFilter");
             groupSelect.innerHTML = '<option>All</option>' + (S.categoryBoot.groups || []).map(x => `<option>${esc(x)}</option>`).join("");
           }
           S.data = normalizeDashboardData(await api(S.view, params()));
+          if (S.view === "category") {
+            const categorySelect = $("categoryFilter"), groupSelect = $("groupFilter"), keepCategory = categorySelect.value, keepGroup = groupSelect.value;
+            if (categorySelect.options.length === 1) (S.data.categories || []).forEach(x => categorySelect.add(new Option(x.category, x.category)));
+            if (groupSelect.options.length === 1) (S.data.groups || []).forEach(x => groupSelect.add(new Option(x.productGroup, x.productGroup)));
+            if ([...categorySelect.options].some(x => x.value === keepCategory)) categorySelect.value = keepCategory;
+            if ([...groupSelect.options].some(x => x.value === keepGroup)) groupSelect.value = keepGroup;
+          }
           render();
           $("status").textContent = dataStatus();
         } catch (e) {
