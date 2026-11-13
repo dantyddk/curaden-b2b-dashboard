@@ -1259,12 +1259,23 @@
         return new Promise((ok, no) => {
           const cb = "cb" + Date.now() + Math.random().toString(36).slice(2),
             s = document.createElement("script");
+          const timer = setTimeout(() => {
+            delete window[cb];
+            s.remove();
+            no(Error("Apps Script response timed out"));
+          }, 35000);
           window[cb] = (r) => {
+            clearTimeout(timer);
             delete window[cb];
             s.remove();
             r.ok ? ok(r.data) : no(Error(r.error));
           };
-          s.onerror = () => no(Error("Unable to reach Apps Script"));
+          s.onerror = () => {
+            clearTimeout(timer);
+            delete window[cb];
+            s.remove();
+            no(Error("Unable to reach Apps Script"));
+          };
           s.src =
             endpoint +
             "?" +
