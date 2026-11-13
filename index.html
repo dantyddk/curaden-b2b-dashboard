@@ -1263,7 +1263,7 @@
             delete window[cb];
             s.remove();
             no(Error("Apps Script response timed out"));
-          }, 35000);
+          }, 120000);
           window[cb] = (r) => {
             clearTimeout(timer);
             delete window[cb];
@@ -1600,15 +1600,8 @@
           render();
           $("status").textContent = dataStatus();
         } catch (e) {
-          if (S.view === "category") {
-            S.data = normalizeDashboardData(mock("category"));
-            render();
-            $("content").insertAdjacentHTML("afterbegin", `<div class="notice error">Category API needs to be redeployed. Showing preview data so the new UX can still be reviewed. Technical detail: ${esc(e.message)}</div>`);
-            $("status").textContent = "Preview data · API redeploy required";
-          } else {
-            $("content").innerHTML = `<div class="notice error">${e.message}</div>`;
-            $("status").textContent = "Connection error";
-          }
+          $("content").innerHTML = `<div class="notice error">Unable to load live data. ${esc(e.message)}</div>`;
+          $("status").textContent = "Live data unavailable";
         } finally {
           $("main").classList.remove("loading");
         }
